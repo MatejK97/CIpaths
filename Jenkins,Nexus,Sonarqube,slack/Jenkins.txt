@@ -8,3 +8,120 @@ Manage jenkins > Plugins:
     Slack Notification
     Build Timestamp
     
+Manage jenkins > Tools:
+    JDK Installation
+        Name: OracleJDK11
+        Java_Home: /usr/lib/jvm/java-1.11.0-openjdk-adm64
+
+        Name: OracleJDK8
+        Java_Home: /usr/lib/jvm/java-1.8.0-openjdk-adm64
+    (Make sure you have both versions installed on Jenkins Server)
+
+    Maven Installation
+        Name: MAVEN3
+        Version
+
+    SonarQube Scanner
+        Name: sonarscanner
+
+Configure System
+    SonarQube Server
+        environment variables
+        Name:sonarserver
+        Server URL: http://SonarServerPrivateIP
+        Auth token: secret text
+        ID: sonartoken
+        (create the token on sonarqube page)
+
+Manage jenkins > Credentials > System > Global credentials
+    Username and password
+        username:
+        password:
+        ID: nexuslogin
+        Description = ID
+
+Jenkins PIPLINE:
+pipline {
+    agent any
+    tools {
+        maven "MAVEN3"
+        jdk "OracleJDK8"
+    }
+
+    environment {
+        SNAP_REPO = 'project-snapshot'
+        NEXUS_USER = 'admin'
+        NEXUS_PASS = 'admin123'
+        RELEASE_REPO = 'project-release'
+        CENTRAL_REPO = 'project-maven-central'
+        NEXUSIP = 'NexusServerPrivateIP'
+        NEXUSPORT = '8081'
+        NEXUS_GRP_REPO = 'project-maven-group'
+        NEXUS_LOGIN = 'nexuslogin'
+        SONARSERVER = 'sonarserver'
+        SONARSCANNER = 'sonarscanner'
+    }
+
+    stages {
+        stage('Build'){
+            steps {
+                sh 'mvn -s settings.xml -DskipTests install'
+            }
+            post {
+                success {
+                    echo 'Now Archiving...'
+                    archiveArtifacts artifacts: '**/target/*.war'
+                }
+            }
+        }
+        stage('Test'){
+            steps {
+                sh 'mvn test'
+            }
+        }
+
+        stage ('checkstyle Analysis'){
+            steps {
+                sh 'mvn -s settings.xml checkstyle:checkstyle'
+            }
+            post {
+                success {
+                    echo 'Generated Analysis Result'
+                }
+            }
+        }
+        stage('Sonar Analysis') {
+		  environment {
+             scannerHome = tool "${SONARSCANNER}"
+          }
+          steps {
+            withSonarQubeEnv("${SONARSERVER}") {
+               sh '''${scannerHome}/bin/sonar-scanner -Dsonar.projectKey=vprofile \
+                   -Dsonar.projectName=project \
+                   -Dsonar.projectVersion=1.0 \
+                   -Dsonar.sources=src/ \
+                   -Dsonar.java.binaries=target/test-classes/com/visualpathit/account/controllerTest/ \
+                   -Dsonar.junit.reportsPath=target/surefire-reports/ \
+                   -Dsonar.jacoco.reportsPath=target/jacoco.exec \
+                   -Dsonar.java.checkstyle.reportPaths=target/checkstyle-result.xml'''
+            }
+    }
+}
+
+
+Jenkins Dashboard > New item:
+    Name:project-ci-pipline
+    pipline
+    pipline script from SCM
+    SCM: git
+    Create Jenkins user for Github
+        SSH username with private key
+        ID: githublogin
+        Description = ID
+        add private ssh key
+    Build settings
+        Github hook trigger for GITScm polling
+
+Github > repository > settings > Webhooks:
+    Payload URL: JenkinsServerIP:8080/github-webhook/
+    Content type: application/json
