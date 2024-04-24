@@ -1,0 +1,20 @@
+URL:NexusServerIP:8081
+
+Administration
+Repository > Repositories > Create
+    Project-release
+    maven2(hosted)
+    
+
+    Project-maven-central
+    maven2(proxy)
+    Remote storage: https://repo1.maven.org/maven2/
+
+    Project-snapshot
+    Version: snapshot
+    maven2(hosted)
+
+    Project-maven-group
+    maven2(group)
+    Group all of the above
+    

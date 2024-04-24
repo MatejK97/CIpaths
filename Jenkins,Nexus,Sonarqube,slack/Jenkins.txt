@@ -1,0 +1,10 @@
+URL:JenkinsServerIP:8080
+
+Manage jenkins > Plugins:
+    Maven Integration
+    Github Integration
+    Nexus Artifact Uploader
+    SonarQube Scanner
+    Slack Notification
+    Build Timestamp
+    
