@@ -1,0 +1,11 @@
+URL:SonarServerIP
+
+Quality Gates > Create
+    Add condition > On Overall Code > Bugs
+
+Projects > Project > Project Settings > Quality Gate
+
+Projects > Project > Project Settings > Webooks > Create
+    Name:Jenkinswebhook
+    URL: http://JenkinsServerPrivateIP:8080/sonarqube-webhook
+
