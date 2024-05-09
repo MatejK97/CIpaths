@@ -1,0 +1,5 @@
+Create a channel
+Add app to Slack
+    Jenkins CI
+
+Follow the steps, get the secret token for jenkins

@@ -36,6 +36,14 @@ Configure System
     Build Timestap
         Configure Timezone and pattern
 
+    Slack
+        Add workspace
+        Credentials:
+            Secret text
+            Jenkins CI slack app secret token
+            ID
+        Add channel (starts with #)
+
 Manage jenkins > Credentials > System > Global credentials
     Username and password
         username:
@@ -43,7 +51,12 @@ Manage jenkins > Credentials > System > Global credentials
         ID: nexuslogin
         Description = ID
 
-Jenkins PIPLINE: File in github repo called Jenkinsfile
+Jenkins PIPELINE: File in github repo called Jenkinsfile
+def COLOR_MAP = [
+    'SUCCESS': 'good',
+    'FAILURE': 'danger'
+]
+
 pipline {
     agent any
     tools {
@@ -63,6 +76,13 @@ pipline {
         NEXUS_LOGIN = 'nexuslogin'
         SONARSERVER = 'sonarserver'
         SONARSCANNER = 'sonarscanner'
+        NEXUS_VERSION = "nexus3"
+        NEXUS_PROTOCOL = "http"
+        NEXUS_URL = "172.31.40.209:8081"
+        NEXUS_REPOSITORY = "project-release"
+	    NEXUS_REPOGRP_ID = "project-grp-repo"
+        NEXUS_CREDENTIAL_ID = "nexuslogin"
+        ARTVERSION = "${env.BUILD_ID}'${env.BUILD_TIMESTAMP}"
     }
 
     stages {
@@ -119,39 +139,30 @@ pipline {
         }
         stage("Publish to Nexus Repository Manager") {
             steps {
-                script {
-                    pom = readMavenPom file: "pom.xml";
-                    filesByGlob = findFiles(glob: "target/*.${pom.packaging}");
-                    echo "${filesByGlob[0].name} ${filesByGlob[0].path} ${filesByGlob[0].directory} ${filesByGlob[0].length} ${filesByGlob[0].lastModified}"
-                    artifactPath = filesByGlob[0].path;
-                    artifactExists = fileExists artifactPath;
-                    if(artifactExists) {
-                        echo "*** File: ${artifactPath}, group: ${pom.groupId}, packaging: ${pom.packaging}, version ${pom.version} ARTVERSION";
-                        nexusArtifactUploader(
-                            nexusVersion: NEXUS_VERSION,
-                            protocol: NEXUS_PROTOCOL,
-                            nexusUrl: NEXUS_URL,
-                            groupId: NEXUS_REPOGRP_ID,
-                            version: ARTVERSION,
-                            repository: NEXUS_REPOSITORY,
-                            credentialsId: NEXUS_CREDENTIAL_ID,
-                            artifacts: [
-                                [artifactId: pom.artifactId,
-                                classifier: '',
-                                file: artifactPath,
-                                type: pom.packaging],
-                                [artifactId: pom.artifactId,
-                                classifier: '',
-                                file: "pom.xml",
-                                type: "pom"]
-                            ]
-                        );
-                    } 
-		    else {
-                        error "*** File: ${artifactPath}, could not be found";
-                    }
-                }
+                nexusArtifactUploader(
+                    nexusVersion: "${NEXUS_VERSION}",
+                    protocol: "${NEXUS_PROTOCOL}",
+                    nexusUrl: "${NEXUS_URL}",
+                    groupId: "${NEXUS_REPOGRP_ID}",
+                    version: "${ARTVERSION}",
+                    repository: "${NEXUS_REPOSITORY}",
+                    credentialsId: "${NEXUS_CREDENTIAL_ID}",
+                    artifacts: [
+                        [artifactId: 'projectapp',
+                        classifier: '',
+                        file: 'target/project-v2.war',
+                        type: 'war']
+                    ]
+                );
             }
+        }
+    }
+    post {
+        always {
+            echo 'Slack Notification.'
+            slackSend channel: '#Jenkinscicd',
+                color: COLOR_MAP[currentBuild.currentResult],
+                message: "${currentBuild.currentResult}:* Job ${env.JOB_NAME} build ${env.BUILD_NUMBER} \n More info at: ${env.BUILD_URL}"
         }
     }
 }
