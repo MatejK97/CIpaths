@@ -2,7 +2,7 @@
 
 <p>Use Jenkins, sonarqube, nexus and slack to setup whole CI pipeline
 
-Jenkins gets triggered via webhook on code commit, builds the artifact, tests the code and analiyzes the code via sonarqube, pushes the code to nexus repository and notifies you on slack if it was successful or it failed.
+Jenkins gets triggered via webhook on code commit, builds the artifact, tests the code and analiyzes the code via sonarqube, pushes the artifact to nexus repository and notifies you on slack if it was successful or it failed.
 </p>
 
 <p>Or</p>
